@@ -1,25 +1,25 @@
 (lang dune 3.16)
 
-(name webplats)
+(name mynameismwd)
 
 (generate_opam_files true)
 
 (source
- (github mdales/webplats))
+ (github mdales/mynameismwd))
 
-(authors "Michael Dales")
+(authors "Michael Dales <michael@digitalflapjack.com>")
 
-(maintainers "Michael Dales")
+(maintainers "Michael Dales <michael@digitalflapjack.com>")
 
-(license LICENSE)
+(license EUPL)
 
 (documentation https://url/to/documentation)
 
 (package
- (name webplats)
+ (name mynameismwd)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml dune)
+ (depends ocaml dune webplats)
  (tags
   (topics "to describe" your project)))
 

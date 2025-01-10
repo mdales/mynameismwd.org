@@ -29,7 +29,7 @@
   (run dream_eml %{deps} --workspace %{workspace_root})))
 
 (executable
- (public_name webplats)
+ (public_name mynameismwd)
  (name main)
  (libraries webplats dream fpath)
  (preprocess
