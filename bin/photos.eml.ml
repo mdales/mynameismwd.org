@@ -3,10 +3,10 @@ open Webplats
 let months = [| "January" ; "Febuary" ; "March" ; "April" ; "May" ; "June" ; "July" ; "August" ; "September" ; "October" ; "November"; "December" |]
 
 
-let ptime_to_str (t : Ptime.t) : string = 
+let ptime_to_str (t : Ptime.t) : string =
   let ((year, month, day), _) = Ptime.to_date_time t in
   Printf.sprintf "%d %s %d"day  months.(month - 1) year
-  
+
 
 let fit_dimensions max_width max_height width height =
   let fwidth = float_of_int width
@@ -28,12 +28,12 @@ let location_info page =
   | Some s -> Printf.sprintf "%s, " s
   in
   let country = match (Page.get_key_as_string page "Country") with Some s -> s | None -> "" in
-  match country with 
+  match country with
   | "" | "United States" | "United States of America" -> Printf.sprintf "%s%s<br/>" city (match (Page.get_key_as_string page "State") with Some x -> x | None -> "")
   | _ -> Printf.sprintf "%s%s<br/>" city country
 
 
-let camera_info page = 
+let camera_info page =
   match (Page.get_key_as_string page "Make") with
   | None -> ""
   | Some make -> (
@@ -53,7 +53,7 @@ let camera_info page =
     Printf.sprintf "%s%s" camera lens
   )
 
-let render_header title = 
+let render_header title =
   <div class="miniheader">
     <div class="miniheadertitle">
       <header role="banner">
@@ -70,16 +70,16 @@ let render_header title =
     </div>
   </div>
 
-let render_section site sec = 
+let render_section site sec =
   <html>
   <%s! (Render.render_head ~site ~sec ()) %>
   <body>
     <div class="almostall">
       <%s! render_header (Section.title sec) %>
-      
+
       <div id="container">
         <div class="gallery">
-         
+
 % (Section.pages sec) |> List.iter begin fun (page) ->
 % let i = Option.get (Page.titleimage page) in
           <article>
@@ -100,7 +100,7 @@ let render_section site sec =
                     alt="<%s desc %>"
 % | None -> ());
                   />
-                </a>  
+                </a>
               </div>
               <div class="gallerycard gallerycard-landscape"
 % (match (i.dimensions) with Some (width, height) ->
@@ -112,22 +112,22 @@ let render_section site sec =
                 <a href="<%s Section.url ~page sec %>" class="title"><%s Page.title page %></a><br/><br/>
                 <div class="gallerycardinner">
                   <div>
-                    <%s! location_info page %>                    
-% let date = match (Page.get_key_as_date page "Taken") with Some d -> d | None -> (Page.date page) in
+                    <%s! location_info page %>
+% let date = match (Page.get_key_as_date page "taken") with Some d -> d | None -> (Page.date page) in
                 <%s ptime_to_str date %><br/>
                   </div>
                 </div>
               </div>
             </div>
           </article>
-% end;  
+% end;
         </div>
-      </div>      
+      </div>
     </div>
   </body>
   </html>
-  
- 
+
+
 let render_page site sec previous_page page next_page =
   <html>
   <%s! (Render.render_head ~site ~sec ~page ()) %>
@@ -172,7 +172,7 @@ let render_page site sec previous_page page next_page =
               </div>
               <div>
                 <%s! location_info page %>
-% let date = match (Page.get_key_as_date page "Taken") with Some d -> d | None -> (Page.date page) in
+% let date = match (Page.get_key_as_date page "taken") with Some d -> d | None -> (Page.date page) in
                 <%s ptime_to_str date %><br/>
                 <%s camera_info page %><br/>
 % (match (Page.get_key_as_string page "Caption") with Some caption ->
@@ -186,14 +186,14 @@ let render_page site sec previous_page page next_page =
 % | [] -> ());
 % albums |> List.iter begin fun (album) ->
                 <a href="/albums/<%s String.lowercase_ascii album |> String.map (fun c -> match c with ' ' -> '-' | x -> x) %>/">• <%s album %></a><br/>
-% end; 
-              </div>                     
+% end;
+              </div>
               <div class="photo">
                 <div class="headerflex">
-% (match previous_page with Some page -> 
+% (match previous_page with Some page ->
                     <a class="prev" href="<%s Section.url ~page sec %>">&#10094;</a>
 % | None -> ());
-% (match next_page with Some page -> 
+% (match next_page with Some page ->
                     <a class="next" href="<%s Section.url ~page sec %>">&#10095;</a>
 % | None -> ());
               </div>
@@ -204,16 +204,16 @@ let render_page site sec previous_page page next_page =
         </div>
        </article>
        </div>
-      </div>  
+      </div>
     </div>
   </body>
   </html>
 
-let rec take n l = 
+let rec take n l =
   match n with
   | 0 -> []
   | _ -> (
-    match l with 
+    match l with
     | [] -> []
     | hd :: tl -> hd :: (take (n - 1) tl)
   )
@@ -225,7 +225,7 @@ let render_taxonomy site taxonomy =
       <div class="almostall">
         <%s! render_header (Taxonomy.title taxonomy) %>
         <div id="container">
-          <div class="gallery">  
+          <div class="gallery">
 % (Taxonomy.sections taxonomy) |> List.iter begin fun (sec) ->
             <div class="galleryitem gallerylandscape album">
               <a href="<%s Section.url sec %>">
@@ -238,7 +238,7 @@ let render_taxonomy site taxonomy =
 % let shift = Random.int_in_range ~min:(-7) ~max:7 in
 % let name, ext = Fpath.split_ext (Fpath.v i.filename) in
 % let retina_filename = Printf.sprintf "%s@2x%s" (Fpath.to_string name) ext in
-                  <div 
+                  <div
                     class="galleryimage"
                     style="transform: rotate(<%d rot %>deg) translate<%s layout %>(<%d shift %>px);"
                   >
