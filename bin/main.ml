@@ -1,16 +1,12 @@
 open Webplats
 
-let thumbnail_loader page thumbnail_size _root _path _request =
+let thumbnail_loader page thumbnail_size _root _path request =
   let path = Image.render_thumbnail page thumbnail_size in
-  Dream.respond
-    (In_channel.with_open_bin (Fpath.to_string path) (fun ic ->
-         In_channel.input_all ic))
+  Router.static_loader "/" (Fpath.to_string path) request
 
-let snapshot_image_loader page image bounds _root _path _request =
+let snapshot_image_loader page image bounds _root _path request =
   let path = Image.render_image page image Fit bounds in
-  Dream.respond
-    (In_channel.with_open_bin (Fpath.to_string path) (fun ic ->
-         In_channel.input_all ic))
+  Router.static_loader "/" (Fpath.to_string path) request
 
 let general_thumbnail_loader ~retina page =
   match Page.original_section_title page with
@@ -30,7 +26,7 @@ let taxonomy_section_renderer taxonomy _sec =
   match Taxonomy.title taxonomy with
   | "albums" -> Photos.render_section
   | _ -> Snapshots.render_section
-  
+
 let taxonomy_renderer taxonomy =
   match Taxonomy.title taxonomy with
   | "albums" -> Photos.render_taxonomy
