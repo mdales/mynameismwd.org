@@ -1,12 +1,16 @@
 open Webplats
 
 let thumbnail_loader page thumbnail_size _root _path request =
-  let path = Image.render_thumbnail page thumbnail_size in
-  Router.static_loader "/" (Fpath.to_string path) request
+  let pathp = Image.render_thumbnail_lwt page thumbnail_size in
+  Lwt.bind pathp (fun path ->
+    Router.static_loader "/" (Fpath.to_string path) request
+  )
 
 let snapshot_image_loader page image bounds _root _path request =
-  let path = Image.render_image page image Fit bounds in
-  Router.static_loader "/" (Fpath.to_string path) request
+  let pathp = Image.render_image_lwt page image Fit bounds in
+  Lwt.bind pathp (fun path ->
+    Router.static_loader "/" (Fpath.to_string path) request
+  )
 
 let general_thumbnail_loader ~retina page =
   match Page.original_section_title page with
