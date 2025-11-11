@@ -42,8 +42,9 @@ let page_render page =
   | "sounds" | "snapshots" -> Snapshots.render_page
   | _ -> Renderer.render_page
 
-let page_body page =
+let page_body sec page =
   match Page.original_section_title page with
+  | "snapshots" -> Snapshots.render_body sec
   | _ -> Render.render_body
 
 let () =
@@ -62,7 +63,7 @@ let () =
           Rss.render_rss site
             (Site.sections site
             |> List.concat_map (fun sec ->
-                   Section.pages sec |> List.map (fun p -> (sec, p, page_body p)))
+                   Section.pages sec |> List.map (fun p -> (sec, p, page_body sec p)))
             |> List.sort (fun (_, a, _) (_, b, _) ->
                    Ptime.compare (Page.date b) (Page.date a)))
           |> Dream.html);

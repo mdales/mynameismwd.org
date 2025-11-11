@@ -1,19 +1,19 @@
 open Webplats
-  
-let render_section site sec = 
+
+let render_section site sec =
   <html>
   <%s! (Render.render_head ~site ~sec ()) %>
   <body>
     <div class="almostall">
       <%s! Renderer.render_header (Section.url sec) (Section.title sec) %>
-      
+
       <div id="container">
         <div class="content">
           <section role="main">
             <div class="tagcontents">
               <h2>Snapshots</h2>
               <div class="tagcellholder">
-    
+
 % (Section.pages sec) |> List.iter begin fun (page) ->
                 <div class="tagcell colour-<%s Page.original_section_title page %>">
                   <div class="tagcelllabel">
@@ -31,32 +31,66 @@ let render_section site sec =
 % (match (i.description) with Some desc ->
                             alt="<%s desc %>"
 % | None -> ());
-                            
+
 % | None -> ());
                           />
                         </figure>
                       </div>
-                    </a>                  
+                    </a>
                   </div>
                 </div>
-% end;  
-              
+% end;
+
               </div>
             </div>
           </section>
         </div>
       </div>
-      <%s! Renderer.render_footer () %>      
+      <%s! Renderer.render_footer () %>
     </div>
   </body>
   </html>
 
-let is_image_retina dims = 
+let is_image_retina dims =
   match dims with
   | None -> true
   | Some (width, height) -> (
     (width > (720 * 2)) && (height > (1200 * 2))
   )
+
+let render_body sec page =
+  <%s! Render.render_body page %>
+  <div class="snapshotlist">
+% List.iter (fun (i : Frontmatter.image) ->
+% let name, ext = Fpath.split_ext (Fpath.v i.filename) in
+% let retina_filename = Printf.sprintf "%s@2x%s" (Fpath.to_string name) ext in
+     <div class="snapshotitem single">
+       <figure class="single">
+         <img
+            src="<%s Section.url ~page sec %><%s i.filename %>"
+% (match (is_image_retina i.dimensions) with true ->
+            srcset="<%s Section.url ~page sec %><%s retina_filename %> 2x, <%s Section.url ~page sec %><%s i.filename %> 1x"
+% | false -> ());
+% (match (i.description) with Some desc ->
+            alt="<%s desc %>"
+% | None -> ());
+         />
+       </figure>
+       <div class="holder holder-top-left"></div>
+       <div class="holder holder-top-right"></div>
+       <div class="holder holder-bottom-left"></div>
+       <div class="holder holder-bottom-right"></div>
+     </div>
+% ) (Page.images page);
+% List.iter (fun (filename :string) ->
+      <div class="video">
+        <video controls>
+          <source src="<%s filename %>" type="video/mp4"/>
+          Your browser does not support the video element.
+        </video>
+      </div>
+% ) (Page.videos page);
+  </div>
 
 let render_page site sec previous_page page next_page =
   <html>
@@ -77,45 +111,14 @@ let render_page site sec previous_page page next_page =
                     <p><%s Renderer.ptime_to_str (Page.date page) %></p>
                   </div>
                 </div>
-                <%s! Render.render_body page %>
-                <div class="snapshotlist">
-% List.iter (fun (i : Frontmatter.image) ->
-% let name, ext = Fpath.split_ext (Fpath.v i.filename) in
-% let retina_filename = Printf.sprintf "%s@2x%s" (Fpath.to_string name) ext in
-                   <div class="snapshotitem single">
-                     <figure class="single">
-                       <img
-                          src="<%s Section.url ~page sec %><%s i.filename %>"
-% (match (is_image_retina i.dimensions) with true -> 
-                          srcset="<%s Section.url ~page sec %><%s retina_filename %> 2x, <%s Section.url ~page sec %><%s i.filename %> 1x"
-% | false -> ());
-% (match (i.description) with Some desc ->
-                          alt="<%s desc %>"
-% | None -> ());
-                       />
-                     </figure>                 
-                     <div class="holder holder-top-left"></div>
-                     <div class="holder holder-top-right"></div>
-                     <div class="holder holder-bottom-left"></div>
-                     <div class="holder holder-bottom-right"></div>
-                   </div>
-% ) (Page.images page);
-% List.iter (fun (filename :string) ->
-                    <div class="video">
-                      <video controls>
-                        <source src="<%s filename %>" type="video/mp4"/>
-                        Your browser does not support the video element.
-                      </video>
-                    </div>
-% ) (Page.videos page);
-                </div>
-                
+                <%s! render_body sec page %>
+
                 <div class="postscript">
                   <ul>
-% (match previous_page with Some page -> 
+% (match previous_page with Some page ->
                     <li><strong>Next</strong>: <a href="<%s Section.url sec ~page %>/"><%s Page.title page %></a></li>
 % | None -> ());
-% (match next_page with Some page -> 
+% (match next_page with Some page ->
                     <li><strong>Previous</strong>: <a href="<%s Section.url ~page sec %>/"><%s Page.title page %></a></li>
 % | None -> ());
 % (match (Page.tags page) with [] -> () | tags ->
@@ -128,14 +131,13 @@ let render_page site sec previous_page page next_page =
 % ) tags));
                   </ul>
                 </div>
-                
+
               </article>
             </div>
           </section>
         </div>
       </div>
-      <%s! Renderer.render_footer () %>   
+      <%s! Renderer.render_footer () %>
     </div>
   </body>
   </html>
-  
