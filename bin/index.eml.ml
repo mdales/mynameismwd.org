@@ -2,17 +2,17 @@ open Webplats
 
 let months = [| "Jan" ; "Feb" ; "Mar" ; "Apr" ; "May" ; "Jun" ; "Jul" ; "Aug" ; "Sept" ; "Oct" ; "Nov"; "Dec" |]
 
-let ptime_to_str (t : Ptime.t) : string = 
+let ptime_to_str (t : Ptime.t) : string =
   let ((year, month, day), _) = Ptime.to_date_time t in
   Printf.sprintf "%d %s %d" day months.(month - 1) year
-  
+
 let render_index site =
   <html>
   <%s! Render.render_head ~site () %>
   <body>
     <div class="almostall">
-      <%s! Renderer.render_header (Section.url (Site.toplevel site)) (Section.title (Site.toplevel site)) %>
-      
+      <%s! Renderer.render_header (Section.uri (Site.toplevel site)) (Section.title (Site.toplevel site)) %>
+
       <div id="container">
         <div class="content">
           <section role="main">
@@ -21,7 +21,7 @@ let render_index site =
                 <div class="index">
 % (Site.sections site) |> List.filter (fun s -> not (Section.synthetic s)) |> List.iter begin fun (sec) ->
                   <div>
-                    <a href="<%s Section.url sec %>">
+                    <a href="<%s Uri.to_string (Section.uri sec) %>">
                       <div class="homebutton colour-<%s Section.title sec %>">
                         <h3><%s Section.title sec %></h3>
                         <p>
@@ -54,8 +54,8 @@ let render_index site =
             </div>
           </section>
         </div>
-      </div>  
-    <%s! Renderer.render_footer () %>    
+      </div>
+    <%s! Renderer.render_footer () %>
     </div>
   </body>
   </html>

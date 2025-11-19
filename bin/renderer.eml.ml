@@ -1,37 +1,37 @@
 open Webplats
 
-let render_header url title = 
+let render_header uri title =
   <div class="header stripes">
     <header role="banner">
       <a ref="home">
         <h1><a href="/">my name is mwd</a></h1>
-        <h2>the <a href="<%s url %>"><%s title %></a> of Michael Winston Dales</h2>
+        <h2>the <a href="<%s Uri.to_string uri %>"><%s title %></a> of Michael Winston Dales</h2>
       </a>
     </header>
   </div>
-  
+
 let months = [| "Jan" ; "Feb" ; "Mar" ; "Apr" ; "May" ; "Jun" ; "Jul" ; "Aug" ; "Sept" ; "Oct" ; "Nov"; "Dec" |]
-  
-let ptime_to_str (t : Ptime.t) : string = 
+
+let ptime_to_str (t : Ptime.t) : string =
   let ((year, month, day), _) = Ptime.to_date_time t in
   Printf.sprintf "%s %d, %d" months.(month - 1) day year
-  
-let render_footer ()   = 
+
+let render_footer ()   =
   <div id="foot" class="stripes">
     <nav>
       <div id="endlinks">
         <div>
           <ul class="rsslinks">
             <li>
-              <a href="/">All</a> 
+              <a href="/">All</a>
               (<a href="/index.xml" type="application/rss+xml" target="_blank">RSS</a>)
             </li>
             <li>
-              <a href="/posts/">Posts</a> 
+              <a href="/posts/">Posts</a>
               (<a href="/posts/index.xml" type="application/rss+xml" target="_blank">RSS</a>)
             </li>
             <li>
-              <a href="/sounds/">Sounds</a> 
+              <a href="/sounds/">Sounds</a>
               (<a href="/sounds/index.xml" type="application/rss+xml" target="_blank">RSS</a>)
             </li>
           </ul>
@@ -39,15 +39,15 @@ let render_footer ()   =
         <div>
           <ul class="rsslinks">
             <li>
-              <a href="/photos/">Photos</a> 
+              <a href="/photos/">Photos</a>
               (<a href="/photos/index.xml" type="application/rss+xml" target="_blank">RSS</a>)
             </li>
             <li>
-              <a href="/snapshots/">Snapshos</a> 
+              <a href="/snapshots/">Snapshos</a>
               (<a href="/snapshots/index.xml" type="application/rss+xml" target="_blank">RSS</a>)
             </li>
             <li>
-              <a href="/zines/">Zines</a> 
+              <a href="/zines/">Zines</a>
               (<a href="/zines/index.xml" type="application/rss+xml" target="_blank">RSS</a>)
             </li>
           </ul>
@@ -74,19 +74,19 @@ let render_section site sec =
   <%s! (Render.render_head ~site ~sec ()) %>
   <body>
     <div class="almostall">
-      <%s! render_header (Section.url sec) (Section.title sec) %>
-    
+      <%s! render_header (Section.uri sec) (Section.title sec) %>
+
     <ul>
 % (Section.pages sec) |> List.iter begin fun (page) ->
       <li>
-      <a href="<%s Section.url ~page sec %>/">
+      <a href="<%s Uri.to_string (Section.uri ~page sec) %>/">
           <%s Page.title page %>
         </a>
       </li>
 % end;
-    
+
     </ul>
-    
+
     <%s! render_footer () %>
   </body>
   </html>
@@ -102,7 +102,7 @@ let render_error site _error _debug_info suggested_response =
     <%s! (Render.render_head ~site ()) %>
     <body>
       <div class="almostall">
-        <%s! render_header (Section.url (Site.toplevel site)) (Section.title (Site.toplevel site)) %>
+        <%s! render_header (Section.uri (Site.toplevel site)) (Section.title (Site.toplevel site)) %>
         <div id="container">
           <div class="content">
             <section role="main">
@@ -114,7 +114,7 @@ let render_error site _error _debug_info suggested_response =
             </section>
           </div>
         </div>
-        <%s! render_footer () %>   
+        <%s! render_footer () %>
       </div>
     </body>
     </html>
@@ -126,7 +126,7 @@ let render_page site sec previous_page page next_page =
   <%s! (Render.render_head ~site ~sec ~page ()) %>
   <body>
     <div class="almostall">
-      <%s! render_header (Section.url sec) (Section.title sec) %>
+      <%s! render_header (Section.uri sec) (Section.title sec) %>
       <div id="container">
         <div class="content">
           <section role="main">
@@ -141,14 +141,14 @@ let render_page site sec previous_page page next_page =
                   </div>
                 </div>
                 <%s! Render.render_body page %>
-                
+
                 <div class="postscript">
                   <ul>
-% (match previous_page with Some page -> 
-                    <li><strong>Next</strong>: <a href="<%s Section.url ~page sec %>"><%s Page.title page %></a></li>
+% (match previous_page with Some page ->
+                    <li><strong>Next</strong>: <a href="<%s Uri.to_string (Section.uri ~page sec) %>"><%s Page.title page %></a></li>
 % | None -> ());
-% (match next_page with Some page -> 
-                    <li><strong>Previous</strong>: <a href="<%s Section.url ~page sec %>"><%s Page.title page %></a></li>
+% (match next_page with Some page ->
+                    <li><strong>Previous</strong>: <a href="<%s Uri.to_string (Section.uri ~page sec) %>"><%s Page.title page %></a></li>
 % | None -> ());
 % (match (Page.tags page) with [] -> () | tags ->
 % let count = (List.length tags) - 1 in
@@ -160,35 +160,35 @@ let render_page site sec previous_page page next_page =
 % ) tags));
                   </ul>
                 </div>
-                
+
               </article>
             </div>
           </section>
         </div>
       </div>
-      <%s! render_footer () %>   
+      <%s! render_footer () %>
     </div>
   </body>
   </html>
-  
+
 let render_taxonomy site taxonomy =
   <html>
   <%s! (Render.render_head ~site ()) %>
   <body>
     <div class="almostall">
-      <%s! render_header (Taxonomy.url taxonomy) (Taxonomy.title taxonomy) %>
-    
+      <%s! render_header (Taxonomy.uri taxonomy) (Taxonomy.title taxonomy) %>
+
     <ul>
 % (Taxonomy.sections taxonomy) |> List.iter begin fun (sec) ->
       <li>
-      <a href="<%s Section.url sec %>">
+      <a href="<%s Uri.to_string (Section.uri sec) %>">
           <%s Section.title sec %>
         </a> - <%d List.length (Section.pages sec) %> items
       </li>
 % end;
-    
+
     </ul>
-    
+
     <%s! render_footer () %>
   </body>
   </html>

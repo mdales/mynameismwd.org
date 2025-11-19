@@ -5,7 +5,7 @@ let render_section site sec =
   <%s! (Render.render_head ~site ~sec ()) %>
   <body>
     <div class="almostall">
-      <%s! Renderer.render_header (Section.url sec) (Section.title sec) %>
+      <%s! Renderer.render_header (Section.uri sec) (Section.title sec) %>
 
       <div id="container">
         <div class="content">
@@ -20,14 +20,15 @@ let render_section site sec =
                     <span><%s Page.title page %></span>
                   </div>
                   <div class="tagcellinner">
-                    <a href="<%s Section.url ~page sec %>">
+                    <a href="<%s Uri.to_string (Section.uri ~page sec) %>">
                       <div class="tagcellimg">
                         <figure>
                           <img
                             loading="lazy"
 % (match (Page.titleimage page) with Some i ->
-                            src="<%s Section.url ~page sec %>thumbnail.jpg"
-                            srcset="<%s Section.url ~page sec %>thumbnail@2x.jpg 2x, <%s Section.url ~page sec %>thumbnail.jpg 1x"
+                            src="<%s Uri.to_string (Section.uri ~page ~resource:{|thumbnail.jpg|} sec) %>"
+                            srcset="<%s Uri.to_string (Section.uri ~page ~resource:{|thumbnail@2x.jpg|} sec) %> 2x,
+                            <%s Uri.to_string (Section.uri ~page ~resource:{|thumbnail.jpg|} sec) %> 1x"
 % (match (i.description) with Some desc ->
                             alt="<%s desc %>"
 % | None -> ());
@@ -58,7 +59,7 @@ let is_image_retina dims =
     (width > (720 * 2)) && (height > (1200 * 2))
   )
 
-let render_body sec page =
+let render_body page =
   <%s! Render.render_body page %>
   <div class="snapshotlist">
 % List.iter (fun (i : Frontmatter.image) ->
@@ -67,9 +68,10 @@ let render_body sec page =
      <div class="snapshotitem single">
        <figure class="single">
          <img
-            src="<%s Section.url ~page sec %><%s i.filename %>"
+            src="<%s i.filename %>"
 % (match (is_image_retina i.dimensions) with true ->
-            srcset="<%s Section.url ~page sec %><%s retina_filename %> 2x, <%s Section.url ~page sec %><%s i.filename %> 1x"
+            srcset="<%s retina_filename %> 2x,
+              <%s i.filename %> 1x"
 % | false -> ());
 % (match (i.description) with Some desc ->
             alt="<%s desc %>"
@@ -97,7 +99,7 @@ let render_page site sec previous_page page next_page =
   <%s! (Render.render_head ~site ~sec ~page ()) %>
   <body>
     <div class="almostall">
-      <%s! Renderer.render_header (Section.url sec) (Section.title sec) %>
+      <%s! Renderer.render_header (Section.uri sec) (Section.title sec) %>
       <div id="container">
         <div class="content">
           <section role="main">
@@ -111,15 +113,15 @@ let render_page site sec previous_page page next_page =
                     <p><%s Renderer.ptime_to_str (Page.date page) %></p>
                   </div>
                 </div>
-                <%s! render_body sec page %>
+                <%s! render_body page %>
 
                 <div class="postscript">
                   <ul>
 % (match previous_page with Some page ->
-                    <li><strong>Next</strong>: <a href="<%s Section.url sec ~page %>/"><%s Page.title page %></a></li>
+                    <li><strong>Next</strong>: <a href="<%s Uri.to_string (Section.uri sec ~page) %>/"><%s Page.title page %></a></li>
 % | None -> ());
 % (match next_page with Some page ->
-                    <li><strong>Previous</strong>: <a href="<%s Section.url ~page sec %>/"><%s Page.title page %></a></li>
+                    <li><strong>Previous</strong>: <a href="<%s Uri.to_string (Section.uri ~page sec) %>/"><%s Page.title page %></a></li>
 % | None -> ());
 % (match (Page.tags page) with [] -> () | tags ->
 % let count = (List.length tags) - 1 in

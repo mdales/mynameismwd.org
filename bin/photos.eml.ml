@@ -85,11 +85,12 @@ let render_section site sec =
           <article>
             <div class="galleryitem gallerylandscape">
               <div class="galleryimage">
-                <a href="<%s Section.url ~page sec %>">
+                <a href="<%s Uri.to_string (Section.uri ~page sec) %>">
                   <img
                     loading="lazy"
-                    src="<%s Section.url ~page sec %>thumbnail.jpg"
-                    srcset="<%s Section.url ~page sec %>thumbnail@2x.jpg 2x, <%s Section.url ~page sec %>thumbnail.jpg 1x"
+                    src="<%s Uri.to_string (Section.uri ~page ~resource:{|thumbnail.jpg|} sec) %>"
+                    srcset="<%s Uri.to_string (Section.uri ~page ~resource:{|thumbnail@2x.jpg|} sec) %> 2x,
+                      <%s Uri.to_string (Section.uri ~page ~resource:{|thumbnail.jpg|} sec) %> 1x"
                     title="<%s Page.title page %>"
 % (match (i.dimensions) with Some (width, height) ->
 % let width, height = fit_dimensions 640 350 width height in
@@ -109,7 +110,7 @@ let render_section site sec =
                 style="width: <%d adjusted_width %>px;"
 % | None -> ());
               >
-                <a href="<%s Section.url ~page sec %>" class="title"><%s Page.title page %></a><br/><br/>
+                <a href="<%s Uri.to_string (Section.uri ~page sec) %>" class="title"><%s Page.title page %></a><br/><br/>
                 <div class="gallerycardinner">
                   <div>
                     <%s! location_info page %>
@@ -141,16 +142,18 @@ let render_page site sec previous_page page next_page =
 % let i = Option.get (Page.titleimage page) in
 % (match (i.dimensions) with Some (width, height) ->
 % let name, ext = Fpath.split_ext (Fpath.v i.filename) in
-% let retina_filename = Printf.sprintf "%s@2x%s" (Fpath.to_string name) ext in
+% let retina_filename = Printf.sprintf "scrn_%s@2x%s" (Fpath.to_string name) ext in
 % let width, height = fit_dimensions 1008 800 width height in
 % let layout = match width > height with true -> "landscape" | false -> "portrait" in
 % let adjusted_width = width + 40 in
+% let scrn_filename = Printf.sprintf "scrn_%s" i.filename in
           <div class="galleryitem gallery<%s layout %>">
             <div class="galleryimage">
                <img
                   loading="lazy"
-                  src="<%s Section.url ~page sec %>scrn_<%s i.filename %>"
-                  srcset="<%s Section.url sec ~page %>scrn_<%s retina_filename %> 2x, <%s Section.url ~page sec %>scrn_<%s i.filename %> 1x"
+                  src="<%s Uri.to_string (Section.uri ~page ~resource:scrn_filename sec) %>"
+                  srcset="<%s Uri.to_string (Section.uri sec ~resource:retina_filename ~page) %> 2x,
+                  <%s Uri.to_string (Section.uri ~page ~resource:scrn_filename sec) %> 1x"
                   title="<%s Page.title page %>"
                   width="<%d width %>"
                   height="<%d height %>"
@@ -164,7 +167,7 @@ let render_page site sec previous_page page next_page =
                 style="width: <%d adjusted_width %>px;"
 % | _ -> ());
             >
-              <a href="<%s Section.url ~page sec %>" class="title"><%s Page.title page %></a><br/><br/>
+              <a href="<%s Uri.to_string (Section.uri ~page sec) %>" class="title"><%s Page.title page %></a><br/><br/>
               <div class="gallerycardinner">
                 <div class="gallerycardcontent">
                   <%s! Render.render_body page %>
@@ -191,10 +194,10 @@ let render_page site sec previous_page page next_page =
               <div class="photo">
                 <div class="headerflex">
 % (match previous_page with Some page ->
-                    <a class="prev" href="<%s Section.url ~page sec %>">&#10094;</a>
+                    <a class="prev" href="<%s Uri.to_string (Section.uri ~page sec) %>">&#10094;</a>
 % | None -> ());
 % (match next_page with Some page ->
-                    <a class="next" href="<%s Section.url ~page sec %>">&#10095;</a>
+                    <a class="next" href="<%s Uri.to_string (Section.uri ~page sec) %>">&#10095;</a>
 % | None -> ());
               </div>
              </div>
@@ -228,7 +231,7 @@ let render_taxonomy site taxonomy =
           <div class="gallery">
 % (Taxonomy.sections taxonomy) |> List.iter begin fun (sec) ->
             <div class="galleryitem gallerylandscape album">
-              <a href="<%s Section.url sec %>">
+              <a href="<%s Uri.to_string (Section.uri sec) %>">
                 <div class="albumstack">
 % (Section.pages sec) |> take 3 |> List.iter begin fun (page) ->
 % let i = Option.get (Page.titleimage page) in
@@ -245,7 +248,8 @@ let render_taxonomy site taxonomy =
                     <img
                       loading="lazy"
                       src="<%s Page.original_section_url page %><%s Page.url_name page %>/album_<%s i.filename %>"
-                      srcset="<%s Page.original_section_url page %><%s Page.url_name page %>/album_<%s retina_filename %> 2x, <%s Page.original_section_url page %><%s Page.url_name page %>/album_<%s i.filename %> 1x"
+                      srcset="<%s Page.original_section_url page %><%s Page.url_name page %>/album_<%s retina_filename %> 2x,
+                        <%s Page.original_section_url page %><%s Page.url_name page %>/album_<%s i.filename %> 1x"
 % (match (i.description) with Some desc ->
                       alt="<%s desc %>"
 % | None -> ());
@@ -256,7 +260,7 @@ let render_taxonomy site taxonomy =
                 </div>
               </a>
               <div class="gallerycard albumcard">
-                <p><a href="<%s Section.url sec %>"><%s Section.title sec %></a><br><%d List.length (Section.pages sec) %> photos</p>
+                <p><a href="<%s Uri.to_string (Section.uri sec) %>"><%s Section.title sec %></a><br><%d List.length (Section.pages sec) %> photos</p>
               </div>
             </div>
 % end;

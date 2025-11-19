@@ -1,12 +1,12 @@
 open Webplats
 
-let thumbnail_loader page thumbnail_size _root _path request =
+let thumbnail_loader page thumbnail_size request =
   let pathp = Image.render_thumbnail_lwt page thumbnail_size in
   Lwt.bind pathp (fun path ->
     Router.static_loader "/" (Fpath.to_string path) request
   )
 
-let snapshot_image_loader page image bounds _root _path request =
+let snapshot_image_loader page image bounds request =
   let pathp = Image.render_image_lwt page image Fit bounds in
   Lwt.bind pathp (fun path ->
     Router.static_loader "/" (Fpath.to_string path) request
@@ -36,15 +36,15 @@ let taxonomy_renderer taxonomy =
   | "albums" -> Photos.render_taxonomy
   | _ -> Renderer.render_taxonomy
 
-let page_render page =
+let page_renderer page =
   match Page.original_section_title page with
   | "photos" -> Photos.render_page
   | "sounds" | "snapshots" -> Snapshots.render_page
   | _ -> Renderer.render_page
 
-let page_body sec page =
+let page_body_renderer page =
   match Page.original_section_title page with
-  | "snapshots" -> Snapshots.render_body sec
+  | "snapshots" -> Snapshots.render_body
   | _ -> Render.render_body
 
 let () =
@@ -56,40 +56,27 @@ let () =
 
   let site = Site.of_directory website_dir in
 
-  let toplevel =
+  let overrides =
     [
       Dream.get "/" (fun _ -> Index.render_index site |> Dream.html);
-      Dream.get "/index.xml" (fun _ ->
-          Rss.render_rss site
-            (Site.sections site
-            |> List.concat_map (fun sec ->
-                   Section.pages sec |> List.map (fun p -> (sec, p, page_body sec p)))
-            |> List.sort (fun (_, a, _) (_, b, _) ->
-                   Ptime.compare (Page.date b) (Page.date a)))
-          |> Dream.html);
     ]
   in
 
-  let static = Router.collect_static_routes site in
-
-  let sections =
-    List.concat_map
-      (Router.routes_for_section ~thumbnail_loader:general_thumbnail_loader
-         ~image_loader:snapshot_image_loader ~section_renderer:section_render
-         ~page_renderer:page_render site)
-      (Site.sections site)
+  let routes = Router.of_site
+    ~thumbnail_loader:general_thumbnail_loader
+    ~image_loader:snapshot_image_loader
+    ~taxonomy_renderer
+    ~taxonomy_section_renderer
+    ~section_renderer:section_render
+    ~page_renderer
+    ~page_body_renderer
+    site
   in
 
-  let taxonomies =
-    Router.routes_for_taxonomies ~thumbnail_loader:general_thumbnail_loader
-      ~image_loader:snapshot_image_loader ~taxonomy_renderer ~taxonomy_section_renderer
-      ~page_renderer:page_render site
-  in
-
-  let aliases = Router.routes_for_aliases site in
+  let routes = overrides @ routes in
 
   Dream.log "Adding %d routes"
-    (List.length (toplevel @ sections @ taxonomies @ aliases @ static));
+    (List.length routes);
   Dream.run ~error_handler:(Dream.error_template (Renderer.render_error site))
   @@ Dream.logger
-  @@ Dream.router (toplevel @ sections @ taxonomies @ aliases @ static)
+  @@ Dream.router routes
