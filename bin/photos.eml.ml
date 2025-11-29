@@ -128,6 +128,45 @@ let render_section site sec =
   </body>
   </html>
 
+let render_body page =
+  <div class="gallery singlegallery">
+% let i = Option.get (Page.titleimage page) in
+% (match (i.dimensions) with Some (width, height) ->
+% let name, ext = Fpath.split_ext (Fpath.v i.filename) in
+% let retina_filename = Printf.sprintf "scrn_%s@2x%s" (Fpath.to_string name) ext in
+% let width, height = fit_dimensions 1008 800 width height in
+% let layout = match width > height with true -> "landscape" | false -> "portrait" in
+% let adjusted_width = width + 40 in
+% let scrn_filename = Printf.sprintf "scrn_%s" i.filename in
+    <div class="galleryitem gallery<%s layout %>">
+      <div class="galleryimage">
+         <img
+            loading="lazy"
+            src="<%s scrn_filename %>"
+            srcset="<%s retina_filename %> 2x,
+            <%s scrn_filename %> 1x"
+            title="<%s Page.title page %>"
+            width="<%d width %>"
+            height="<%d height %>"
+% (match (i.description) with Some desc ->
+            alt="<%s desc %>"
+% | None -> ());
+          />
+      </div>
+      <div class="gallerycard gallerycard-<%s layout %>"
+% (match layout with "landscape" ->
+                style="width: <%d adjusted_width %>px;"
+% | _ -> ());
+      >
+        <div class="gallerycardinner">
+          <div class="gallerycardcontent">
+            <%s! Render.render_body page %>
+          </div>
+        </div>
+      </div>
+    </div>
+% | None -> ());
+  </div>
 
 let render_page site sec previous_page page next_page =
   <html>

@@ -45,6 +45,7 @@ let page_renderer page =
 let page_body_renderer page =
   match Page.original_section_title page with
   | "snapshots" -> Snapshots.render_body
+  | "photos" -> Photos.render_body
   | _ -> Render.render_body
 
 let () =
