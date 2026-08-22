@@ -1,24 +1,33 @@
+open Htmlit
 open Webplats
 
-let thumbnail_loader page thumbnail_size request =
-  let pathp = Image.render_thumbnail_lwt page thumbnail_size in
-  Lwt.bind pathp (fun path ->
-    Router.static_loader "/" (Fpath.to_string path) request
-  )
+let get_cache_dir env =
+  let p =
+    match Sys.getenv_opt "WEBPLATS_CACHE_DIR" with
+    | Some x -> x
+    | None -> (
+        match Sys.getenv_opt "TMPDIR" with Some x -> x | None -> "/tmp")
+  in
+  Eio.Path.(env#fs / p)
 
-let snapshot_image_loader page image bounds request =
-  let pathp = Image.render_image_lwt page image Fit bounds in
-  Lwt.bind pathp (fun path ->
-    Router.static_loader "/" (Fpath.to_string path) request
-  )
+let thumbnail_loader process_mgr cache_dir page thumbnail_size =
+  Image.render_thumbnail process_mgr cache_dir page thumbnail_size
 
-let general_thumbnail_loader ~retina page =
+let snapshot_image_loader process_mgr cache_dir page image bounds =
+  Image.render_image process_mgr cache_dir page image Fit bounds
+
+let diagram_loader process_mgr cache_dir page code =
+  Image.render_diagram process_mgr cache_dir page code
+
+let general_thumbnail_loader ~process_mgr ~cache_dir ~retina page =
   match Page.original_section_title page with
-  | "photos" ->
-      let i = Option.get (Page.titleimage page) in
-      snapshot_image_loader page i.filename
+  | "projects" ->
+      let i = Option.get (Page.get_key_as_string page "icon") in
+      snapshot_image_loader process_mgr cache_dir page i
         (if retina then (1280, 700) else (640, 350))
-  | _ -> thumbnail_loader page (if retina then 600 else 300)
+  | _ ->
+      thumbnail_loader process_mgr cache_dir page (if retina then 600 else 300)
+
 
 let section_render sec =
   match Section.title sec with
@@ -44,40 +53,89 @@ let page_renderer page =
 
 let page_body_renderer page =
   match Page.original_section_title page with
-  | "snapshots" -> Snapshots.render_body
-  | "photos" -> Photos.render_body
+  | "snapshots" -> (fun p ->
+    El.to_string ~doctype:false (El.div (Snapshots.render_body p))
+  )
+  | "photos" -> (fun p ->
+    El.to_string ~doctype:false (Photos.render_body p)
+  )
   | _ -> Render.render_body
 
+let log_error ex = Printf.eprintf "Server error: %s\n%!" (Printexc.to_string ex)
+
+let handler routes _socket req _body =
+  let open Cohttp_eio in
+  let request_path = Http.Request.resource req in
+  let uri = Uri.of_string request_path in
+  (* let path = Uri.path uri in *)
+  let meth = Http.Request.meth req in
+  let status, response =
+    match meth with
+    | `GET -> (
+        match List.assoc_opt uri routes with
+        | Some handler -> (`OK, handler req)
+        | None ->
+            ( `Not_found,
+              Server.respond_string ~status:`Not_found ~body:"Not found\n" () ))
+    | _ ->
+        ( `Not_found,
+          Server.respond_string ~status:`Not_found ~body:"Not found\n" () )
+  in
+  Printf.printf "%s %s %s\n%!"
+    (Http.Method.to_string meth)
+    request_path
+    (Http.Status.to_string status);
+  response
+
+
 let () =
+  Eio_main.run @@ fun env ->
+  let cache_dir = get_cache_dir env in
+  Eio.Switch.run @@ fun sw ->
   let website_dir =
     match Array.to_list Sys.argv with
-    | [ _; path ] -> Fpath.v path
+    | [ _; path ] ->
+        if Filename.is_relative path then Eio.Path.(env#cwd / path)
+        else Eio.Path.(env#fs / path)
     | _ -> failwith "Expected one arg, your website dir"
   in
 
   let site = Site.of_directory website_dir in
 
-  let overrides =
-    [
-      Dream.get "/" (fun _ -> Index.render_index site |> Dream.html);
-    ]
+
+  let overrides : Router.route list =
+    {
+      uri = Uri.of_string "/";
+      handler =
+        (
+         fun _ -> (
+          let body =
+            Index.render_index site
+            |> Htmlit.El.to_string ~doctype:true
+          in
+          Cohttp_eio.Server.respond_string ~status:`OK ~body ())
+        );
+    } :: []
   in
 
-  let routes = Router.of_site
-    ~thumbnail_loader:general_thumbnail_loader
-    ~image_loader:snapshot_image_loader
-    ~taxonomy_renderer
-    ~taxonomy_section_renderer
-    ~section_renderer:section_render
-    ~page_renderer
-    ~page_body_renderer
-    site
-  in
+  let routes =
+   Router.of_site ~section_renderer:section_render
+     ~image_loader:(snapshot_image_loader env#process_mgr cache_dir)
+     ~thumbnail_loader:
+       (general_thumbnail_loader ~process_mgr:env#process_mgr ~cache_dir)
+     ~diagram_loader:(diagram_loader env#process_mgr cache_dir)
+     ~taxonomy_section_renderer ~taxonomy_renderer ~page_renderer
+     ~page_body_renderer site
+ in
 
-  let routes = overrides @ routes in
+ let routes =
+   overrides @ routes |> List.map (fun p -> (p.Router.uri, p.Router.handler))
+ in
 
-  Dream.log "Adding %d routes"
-    (List.length routes);
-  Dream.run ~error_handler:(Dream.error_template (Renderer.render_error site))
-  @@ Dream.logger
-  @@ Dream.router routes
+ let socket =
+   Eio.Net.listen env#net ~sw ~backlog:128 ~reuse_addr:true
+     (`Tcp (Eio.Net.Ipaddr.V4.loopback, 8081))
+ in
+ Printf.printf "Listening on http://localhost:8081\n%!";
+ Cohttp_eio.Server.run socket ~on_error:log_error
+   (Cohttp_eio.Server.make ~callback:(handler routes) ())
