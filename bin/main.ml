@@ -134,8 +134,8 @@ let () =
 
  let socket =
    Eio.Net.listen env#net ~sw ~backlog:128 ~reuse_addr:true
-     (`Tcp (Eio.Net.Ipaddr.V4.loopback, 8081))
+     (`Tcp (Eio.Net.Ipaddr.V4.loopback, 8080))
  in
- Printf.printf "Listening on http://localhost:8081\n%!";
+ Printf.printf "Listening on http://localhost:8080\n%!";
  Cohttp_eio.Server.run socket ~on_error:log_error
    (Cohttp_eio.Server.make ~callback:(handler routes) ())
