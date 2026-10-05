@@ -27,7 +27,7 @@ let render_section site sec =
 			];
 			El.div ~at:[At.class' "tagcellinner"] [
 				El.a ~at:[At.href (Uri.to_string (Section.uri ~page sec))] [
-					El.div ~at:[At.class' "tagcellimage"] [
+					El.div ~at:[At.class' "tagcellimg"] [
 						El.figure [
 							El.img ~at:([
 								At.v "loading" "lazy";
